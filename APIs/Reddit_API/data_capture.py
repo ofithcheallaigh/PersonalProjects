@@ -28,28 +28,67 @@ headers['Authorization'] = f'bearer {TOKEN}'
 temp = requests.get("https://oauth.reddit.com/api/v1/me", headers=headers).json()
 # pprint(temp)
 
-# Look for "hot" posts on x-subreddit
-res = requests.get('https://oauth.reddit.com/r/northernireland/hot', headers=headers, params={'limit':100})
+# Look for "new" posts on x-subreddit, with a limit of 1. I believe this gets me the latest post
+# In fact, I took a look at Reddit/r/northernireland and it does give me the newest post.
+# I will use the full name from here to ue the 'after' parameter
+res = requests.get('https://oauth.reddit.com/r/northernireland/new', headers=headers, params={'limit':1})
 with open('hot.json', 'w') as outfile:
     json.dump(res.json(), outfile, indent=4)
 
-# Now to extract some more targeted information
-# for post in res.json()['data']['children']:
-    # print(post)
+for post in res.json()['data']['children']:
+    fullname = (post['kind'] + '_' + post['data']['id'])
 
-# for post in res.json()['data']['children']:
-    # print(post['data']['title']) 
 
 # initalise empty dataframe
 df = pd.DataFrame()
 
 # -------------------------------------------------------- #
-# ----------------- Data Capture Stat -------------------- #
+# ----------------- Data Capture Start ------------------- #
 # -------------------------------------------------------- #
+
+# Trying to create a data capture function
+reddit_sub_url = "https://oauth.reddit.com/r/northernireland/new"
+parameters = {'limit':100, 'after':fullname}
+
+
+for x in range(5):
+    req = requests.get(reddit_sub_url, headers=headers, params=parameters)
+    for post in req.json()['data']['children']:
+        df = df.append({
+            'subreddit': post['data']['subreddit'],
+            'post_title': post['data']['title'],
+            'post_author': post['data']['author'],
+            'post_content': post['data']['selftext'],
+            'upvote_ratio': post['data']['upvote_ratio'],
+            'ups': post['data']['ups'],
+            'downs': post['data']['downs'],
+            'score': post['data']['score'],
+            'created': post['data']['created_utc'],
+            'url': post['data']['url']
+        }, ignore_index=True)
+
+    for post in res.json()['data']['children']:
+        updated_fullname = (post['kind'] + '_' + post['data']['id'])
+
+    parameters = {'limit': 100, 'after':updated_fullname}
+    x = x + 1
+
+df.to_json("reddit_ni_new_data.json") # Save to json file
+
+# -------------------------------------------------------- #
+# ----------------- Data Capture End --------------------- #
+# -------------------------------------------------------- #
+
+
+
+
+
 """
-To Do: Put into a function once I figure out how to work with the various 'after' string 
-which is used in the parameter to allow me to extract data after that post
-"""
+Removed, but kept as reference
+
+# To Do: Put into a function once I figure out how to work with the various 'after' string 
+# which is used in the parameter to allow me to extract data after that post
+
 for post in res.json()['data']['children']:
     df = df.append({
         'subreddit': post['data']['subreddit'],
@@ -152,3 +191,4 @@ df.to_json("reddit_ni_data.json") # Save to json file
 # --------------- Data Capture End -------------------------- #
 # ----------------------------------------------------------- #
 
+"""
