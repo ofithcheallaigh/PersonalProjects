@@ -1,4 +1,5 @@
 import json
+from numpy import full
 import requests
 import requests.auth
 from my_private_config import username, password, client_secret, client_id
@@ -37,6 +38,7 @@ with open('hot.json', 'w') as outfile:
 
 for post in res.json()['data']['children']:
     fullname = (post['kind'] + '_' + post['data']['id'])
+    print("my fullname is: ", fullname)
 
 
 # initalise empty dataframe
@@ -67,11 +69,13 @@ for x in range(5):
             'url': post['data']['url']
         }, ignore_index=True)
 
-    for post in res.json()['data']['children']:
+    for post in req.json()['data']['children']:
         updated_fullname = (post['kind'] + '_' + post['data']['id'])
 
     parameters = {'limit': 100, 'after':updated_fullname}
     x = x + 1
+
+    print((post['kind'] + '_' + post['data']['id']))
 
 df.to_json("reddit_ni_new_data.json") # Save to json file
 
